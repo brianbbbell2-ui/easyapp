@@ -1,0 +1,292 @@
+<script type="text/template" id="account-template">
+  <div class="p-4 md:p-6 space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800">จัดการผู้ใช้งาน (Account)</h2>
+      <button id="add-user-btn" onclick="openUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-medium transition shadow-sm flex items-center justify-center">
+        <i class="fas fa-user-plus mr-2"></i> เพิ่มผู้ใช้ใหม่
+      </button>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[600px]">
+          <thead>
+            <tr class="bg-gray-50 border-b">
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">ชื่อ-นามสกุล</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">USERNAME</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">ROLE</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">ติดต่อ</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body" class="divide-y divide-gray-100">
+            <tr>
+              <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                <div class="flex flex-col items-center space-y-2">
+                  <i class="fas fa-circle-notch fa-spin text-2xl text-blue-500"></i>
+                  <span>กำลังโหลดข้อมูล...</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Modal -->
+  <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all scale-95 opacity-0 duration-300" id="modalContent">
+      <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+        <h3 id="modalTitle" class="text-lg font-bold text-gray-800">เพิ่มผู้ใช้งาน</h3>
+        <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="userForm" onsubmit="handleUserSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" name="id">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
+          <input type="text" name="name" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+            <input type="text" name="phone" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+            <input type="email" name="email" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <input type="text" name="username" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input type="password" name="password" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+          </div>
+        </div>
+        <div id="role-container">
+          <label class="block text-sm font-medium text-gray-700 mb-1">สิทธิ์การใช้งาน (Role)</label>
+          <select name="role" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
+            <option value="User">User</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="pt-4 flex space-x-3">
+          <button type="button" onclick="closeUserModal()" class="flex-1 px-4 py-2.5 border rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">ยกเลิก</button>
+          <button type="submit" id="save-user-btn" class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition shadow-sm">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</script>
+
+<script>
+  let userCache = null;
+  let lastUserFetchTime = 0;
+  const USER_CACHE_DURATION = 60000;
+
+  function initAccount() {
+    loadUsers();
+    // ปุ่มเพิ่มผู้ใช้แสดงผลสำหรับทุกคน ไม่ต้องซ่อน
+    const addBtn = document.getElementById('add-user-btn');
+    if (addBtn) {
+      addBtn.classList.remove('hidden');
+    }
+  }
+
+  function loadUsers(force = false) {
+    const tbody = document.getElementById('user-table-body');
+    const now = Date.now();
+
+    // ใช้ Cache ถ้าข้อมูลยังไม่เก่าเกินไป
+    if (!force && userCache && (now - lastUserFetchTime < USER_CACHE_DURATION)) {
+      renderUsers(userCache);
+      return;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-500"><div class="flex flex-col items-center space-y-2"><i class="fas fa-circle-notch fa-spin text-2xl text-blue-500"></i><span>กำลังโหลดข้อมูล...</span></div></td></tr>';
+
+    google.script.run.withSuccessHandler(function(response) {
+      if (response.success) {
+        userCache = response.data;
+        lastUserFetchTime = Date.now();
+        renderUsers(userCache);
+      } else {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-red-500">${response.message}</td></tr>`;
+      }
+    }).getUsers();
+  }
+
+  function renderUsers(users) {
+    const tbody = document.getElementById('user-table-body');
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-500">ไม่พบข้อมูลผู้ใช้งาน</td></tr>';
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    users.forEach(user => {
+      const isSelf = String(user.username) === String(currentUser.username);
+      const isAdmin = currentUser.role === 'Admin';
+      const canEdit = isAdmin || isSelf;
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-gray-50 transition';
+      tr.innerHTML = `
+        <td class="px-6 py-4">
+          <div class="font-medium text-gray-800">${user.name} ${isSelf ? '<span class="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-md ml-1">คุณ</span>' : ''}</div>
+          <div class="text-xs text-gray-400">ID: ${user.id}</div>
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-600">${user.username}</td>
+        <td class="px-6 py-4">
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold ${user.role === 'Admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">
+            ${user.role}
+          </span>
+        </td>
+        <td class="px-6 py-4">
+          <div class="text-xs text-gray-600"><i class="fas fa-phone-alt mr-1.5 opacity-50"></i>${user.phone || '-'}</div>
+          <div class="text-xs text-gray-600 mt-1"><i class="fas fa-envelope mr-1.5 opacity-50"></i>${user.email || '-'}</div>
+        </td>
+        <td class="px-6 py-4 text-center">
+          <div class="flex items-center justify-center space-x-2">
+            ${canEdit ? `<button onclick='openUserModal(${JSON.stringify(user)})' class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="แก้ไข"><i class="fas fa-edit"></i></button>` : '<i class="fas fa-lock text-gray-300" title="ไม่มีสิทธิ์แก้ไข"></i>'}
+            ${isAdmin && !isSelf ? `<button onclick="deleteUserConfirm('${user.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="ลบ"><i class="fas fa-trash-alt"></i></button>` : ''}
+          </div>
+        </td>
+      `;
+      fragment.appendChild(tr);
+    });
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+  }
+
+  function openUserModal(user = null) {
+    // ตรวจสอบสิทธิ์การคลิกปุ่มเพิ่มผู้ใช้ใหม่ (ถ้าไม่ใช่ Admin และไม่ได้แก้ไขตัวเอง)
+    if (!user && currentUser.role !== 'Admin') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ไม่มีสิทธิ์เข้าถึง',
+        text: 'เฉพาะสิทธิ์ Admin เท่านั้นที่สามารถเพิ่มผู้ใช้งานใหม่ได้',
+        confirmButtonColor: '#3085d6'
+      });
+      return;
+    }
+
+    const modal = document.getElementById('userModal');
+    const content = document.getElementById('modalContent');
+    const form = document.getElementById('userForm');
+    const title = document.getElementById('modalTitle');
+    const roleContainer = document.getElementById('role-container');
+
+    form.reset();
+    form.id.value = '';
+    title.innerText = user ? 'แก้ไขข้อมูลผู้ใช้งาน' : 'เพิ่มผู้ใช้งานใหม่';
+    
+    // จัดการการแสดงผล Role (เฉพาะ Admin ที่เปลี่ยน Role ได้)
+    if (currentUser.role !== 'Admin') {
+      roleContainer.classList.add('hidden');
+    } else {
+      roleContainer.classList.remove('hidden');
+    }
+
+    if (user) {
+      form.id.value = user.id;
+      form.name.value = user.name;
+      form.phone.value = user.phone || '';
+      form.email.value = user.email || '';
+      form.username.value = user.username;
+      form.password.value = user.password;
+      form.role.value = user.role;
+    } else {
+      form.role.value = 'User';
+    }
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      content.classList.remove('scale-95', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+  }
+
+  function closeUserModal() {
+    const modal = document.getElementById('userModal');
+    const content = document.getElementById('modalContent');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 300);
+  }
+
+  function handleUserSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('save-user-btn');
+    const form = e.target;
+    const formData = {
+      id: form.id.value,
+      name: form.name.value,
+      phone: form.phone.value,
+      email: form.email.value,
+      username: form.username.value,
+      password: form.password.value,
+      role: form.role.value,
+      requestorRole: currentUser.role // ส่งสิทธิ์ผู้ขอทำรายการไปด้วย
+    };
+
+    // ป้องกันสิทธิ์ User แอบส่งเพิ่มข้อมูล
+    if (!formData.id && currentUser.role !== 'Admin') {
+      Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์เพิ่มผู้ใช้งานใหม่', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> กำลังบันทึก...';
+
+    const action = formData.id ? 'updateUser' : 'addUser';
+    google.script.run.withSuccessHandler(function(response) {
+      if (response.success) {
+        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: response.message, timer: 1500, showConfirmButton: false });
+        closeUserModal();
+        userCache = null; // ล้าง Cache
+        loadUsers(true);
+      } else {
+        Swal.fire('ผิดพลาด', response.message, 'error');
+      }
+      btn.disabled = false;
+      btn.innerHTML = 'บันทึก';
+    })[action](formData);
+  }
+
+  function deleteUserConfirm(userId) {
+    if (currentUser.role !== 'Admin') {
+      Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Admin เท่านั้นที่สามารถลบผู้ใช้งานได้', 'error');
+      return;
+    }
+
+    Swal.fire({
+      title: 'ยืนยันการลบ?',
+      text: "คุณไม่สามารถย้อนกลับการดำเนินการนี้ได้!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'ใช่, ลบเลย!',
+      cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        google.script.run.withSuccessHandler(function(response) {
+          if (response.success) {
+            Swal.fire('ลบแล้ว!', response.message, 'success');
+            userCache = null;
+            loadUsers(true);
+          } else {
+            Swal.fire('ผิดพลาด', response.message, 'error');
+          }
+        }).deleteUser(userId);
+      }
+    });
+  }
+</script>
