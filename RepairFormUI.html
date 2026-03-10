@@ -1,0 +1,351 @@
+<script type="text/template" id="repair-form-template">
+  <div class="bg-white min-h-screen flex flex-col">
+    <header class="bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+      <div class="flex items-center">
+        <button onclick="showMain()" class="text-gray-500 mr-4 hover:bg-gray-100 p-2 rounded-full transition"><i class="fas fa-arrow-left text-xl"></i></button>
+        <h1 class="text-xl font-bold text-gray-800">แบบฟอร์มแจ้งซ่อมทรัพย์สิน</h1>
+      </div>
+      <div class="flex space-x-2">
+        <button onclick="toggleRepairTab('form')" id="tab-form-btn" class="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white shadow-sm transition-all">สร้างรายการใหม่</button>
+        <button onclick="toggleRepairTab('history')" id="tab-history-btn" class="px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition-all">ประวัติการบันทึก</button>
+      </div>
+    </header>
+
+    <div id="repair-form-section" class="flex-grow p-4 max-w-4xl mx-auto w-full pb-20">
+      <form id="repairForm" onsubmit="handleRepairSubmit(event)" class="space-y-6">
+        <!-- Job Info Section -->
+        <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-sm">
+          <div>
+            <label class="block text-sm font-bold text-blue-800 mb-2">Job No. <span class="text-red-500">*</span>:</label>
+            <input type="text" name="jobNo" id="form-jobNo" required class="w-full px-4 py-3 bg-white border-2 border-blue-400 rounded-xl text-blue-700 font-bold outline-none shadow-inner focus:ring-2 focus:ring-blue-500 transition-all">
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-blue-800 mb-2">ID (ระบุเพื่อดึงข้อมูลจาก Database) <span class="text-red-500">*</span>:</label>
+            <div class="relative">
+              <input type="text" name="assetSearchId" id="assetSearchId" onchange="fetchAssetData(this.value)" required placeholder="กรอกรหัส ID..." class="w-full px-4 py-3 border-2 border-blue-400 rounded-xl outline-none shadow-inner focus:ring-2 focus:ring-blue-500 transition-all">
+              <div id="id-loading" class="hidden absolute right-4 top-3.5"><i class="fas fa-spinner fa-spin text-blue-500"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Asset Details Section -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+          <h2 class="font-bold text-lg text-gray-800 flex items-center"><span class="w-2 h-6 bg-blue-600 rounded-full mr-3"></span>รายละเอียดทรัพย์สิน</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <input type="hidden" name="id" id="form-id">
+            <input type="hidden" name="codeAsset" id="form-codeAsset">
+            
+            <div><label class="block text-sm font-medium text-gray-600 mb-2">บริษัท:</label><input type="text" name="company" id="form-company" readonly class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500"></div>
+            <div><label class="block text-sm font-bold text-gray-800 mb-2">Cost Center:</label><input type="text" name="costCenter" id="form-costCenter" class="w-full px-4 py-3 border-2 border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder-gray-400" placeholder="กรอก Cost Center..."></div>
+            <div><label class="block text-sm font-medium text-gray-600 mb-2">ฝ่าย / แผนก:</label><input type="text" name="department" id="form-department" readonly class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500"></div>
+            <div><label class="block text-sm font-medium text-gray-600 mb-2">สถานที่:</label><input type="text" name="location" id="form-location" readonly class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500"></div>
+             <div><label class="block text-sm font-medium text-gray-600 mb-2">รหัสทรัพย์สิน:</label><input type="text" name="codeAssetDisplay" id="form-codeAssetDisplay" readonly class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500"></div>
+            <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-600 mb-2">รายการทรัพย์สิน (ชื่อ/ยี่ห้อ/รุ่น/ขนาด):</label><input type="text" name="assetName" id="form-assetName" readonly class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500"></div>
+            <div><label class="block text-sm font-medium text-gray-600 mb-2">Serial No.:</label><input type="text" name="serialNo" id="form-serialNo" readonly class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500"></div>
+            <div><label class="block text-sm font-medium text-gray-600 mb-2">การรับประกันสิ้นสุดวันที่:</label><input type="text" name="warrantyExp" id="form-warrantyExp" readonly class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500"></div>
+            
+            <div class="md:col-span-2">
+              <label class="block text-sm font-bold text-gray-800 mb-2">รายละเอียดที่ขอซ่อม อาการเสีย / ชำรุด <span class="text-red-500">*</span>:</label>
+              <textarea name="issueDetail" rows="3" required placeholder="ระบุอาการเสียอย่างละเอียด..." class="w-full px-4 py-3 border-2 border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Requester Info Section -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+          <h2 class="font-bold text-lg text-gray-800 flex items-center"><span class="w-2 h-6 bg-green-600 rounded-full mr-3"></span>ผู้แจ้งซ่อมและผู้รับทราบ</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-2">ผู้แจ้งซ่อม:</label>
+              <input type="text" name="requester" id="form-requester" readonly class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-2">เบอร์ติดต่อ / อีเมล์:</label>
+              <input type="text" name="contactInfo" id="form-contactInfo" readonly class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-600 mb-2">รับทราบโดยผู้จัดการฝ่ายขึ้นไป:</label>
+              <input type="text" name="acknowledgedBy" value="คุณเกรียงศักดิ์   โพศรี" readonly class="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl font-bold text-blue-800">
+            </div>
+          </div>
+        </div>
+
+        <!-- Inspection Section -->
+        <div class="bg-white p-6 rounded-2xl border-2 border-orange-200 shadow-sm space-y-6">
+          <h2 class="font-bold text-lg text-orange-800 flex items-center"><span class="w-2 h-6 bg-orange-600 rounded-full mr-3"></span>ผลการตรวจสอบ (สำหรับหน่วยงานตรวจสอบ)</h2>
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">สถานะการตรวจสอบ <span class="text-red-500">*</span>:</label>
+                <div class="space-y-3 p-4 bg-orange-50 rounded-xl border border-orange-100">
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="radio" name="status" value="แก้ไขได้" onchange="handleStatusChange()" required class="w-5 h-5 text-orange-600">
+                    <span class="font-bold text-gray-700">แก้ไขได้</span>
+                  </label>
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="radio" name="status" value="ส่งซ่อมรายละเอียด" onchange="handleStatusChange()" class="w-5 h-5 text-orange-600">
+                    <span class="font-bold text-gray-700">ส่งซ่อมรายละเอียด</span>
+                  </label>
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="radio" name="status" value="ไม่ส่งซ่อมเนื่องจาก" onchange="handleStatusChange()" class="w-5 h-5 text-orange-600">
+                    <span class="font-bold text-gray-700">ไม่ส่งซ่อมเนื่องจาก</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">ผู้ตรวจสอบ:</label>
+                <input type="text" name="inspectedBy" value="คุณเอกสิทธิ์   ศรีจำพันธุ์" readonly class="w-full px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl font-bold text-orange-800 mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">รายละเอียดเพิ่มเติม (Fix Detail):</label>
+                <textarea name="fixDetail" rows="2" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="ระบุรายละเอียดการตรวจสอบ..."></textarea>
+              </div>
+            </div>
+
+            <div id="fix1-container" class="hidden animate-fade-in">
+              <label class="block text-sm font-bold text-blue-800 mb-2">รายละเอียดส่งซ่อม (Fix1Detail) <span class="text-red-500">*</span>:</label>
+              <input type="text" name="fix1Detail" id="fix1Detail" class="w-full px-4 py-3 border-2 border-blue-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div id="fix2-container" class="hidden animate-fade-in">
+              <label class="block text-sm font-bold text-red-800 mb-2">เหตุผลที่ไม่ส่งซ่อม (Fix2Detail) <span class="text-red-500">*</span>:</label>
+              <input type="text" name="fix2Detail" id="fix2Detail" class="w-full px-4 py-3 border-2 border-red-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-xl hover:bg-blue-700 transition-all shadow-lg active:transform active:scale-95">
+          <i class="fas fa-paper-plane mr-2"></i> ส่งข้อมูลแจ้งซ่อมและสร้าง PDF
+        </button>
+      </form>
+    </div>
+
+    <div id="repair-history-section" class="hidden p-4 max-w-6xl mx-auto w-full pb-20">
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
+          <h2 class="font-bold text-lg text-gray-800">ประวัติการบันทึก (50 รายการล่าสุด)</h2>
+          <button onclick="loadRepairHistory()" class="flex items-center text-blue-600 font-medium hover:bg-blue-50 px-3 py-1 rounded-lg transition-all">
+            <i class="fas fa-sync-alt mr-2"></i> รีเฟรช
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-50 text-gray-600 text-sm font-bold">
+                <th class="px-6 py-4 border-b">Job No. / วันที่</th>
+                <th class="px-6 py-4 border-b">ID</th>
+                <th class="px-6 py-4 border-b">รายการทรัพย์สิน</th>
+                <th class="px-6 py-4 border-b">สถานะ</th>
+                <th class="px-6 py-4 border-b text-center">PDF</th>
+              </tr>
+            </thead>
+            <tbody id="repair-history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</script>
+
+<script>
+  let repairCache = null;
+  let lastFetchTime = 0;
+
+  function initRepairForm() {
+    const now = new Date();
+    const jobPrefix = "REQ" + now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0');
+    document.getElementById('form-jobNo').value = jobPrefix + "-XXXX"; // จะถูกเจนใหม่ที่ Server
+    
+    // ตั้งค่าข้อมูลผู้แจ้งซ่อมจาก User ที่ Login
+    document.getElementById('form-requester').value = currentUser.name;
+    document.getElementById('form-contactInfo').value = (currentUser.phone || '') + ' / ' + (currentUser.email || '');
+    
+    loadRepairHistory();
+  }
+
+  function toggleRepairTab(tab) {
+    document.getElementById('repair-form-section').classList.toggle('hidden', tab !== 'form');
+    document.getElementById('repair-history-section').classList.toggle('hidden', tab === 'form');
+    
+    const btnForm = document.getElementById('tab-form-btn');
+    const btnHist = document.getElementById('tab-history-btn');
+    
+    if (tab === 'form') {
+      btnForm.className = "px-4 py-2 rounded-lg font-medium bg-blue-600 text-white shadow-sm transition-all";
+      btnHist.className = "px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition-all";
+    } else {
+      btnForm.className = "px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition-all";
+      btnHist.className = "px-4 py-2 rounded-lg font-medium bg-blue-600 text-white shadow-sm transition-all";
+    }
+  }
+
+  function fetchAssetData(id) {
+    if (!id) return;
+    const loader = document.getElementById('id-loading');
+    loader.classList.remove('hidden');
+    
+    google.script.run.withSuccessHandler(function(r) {
+      loader.classList.add('hidden');
+      if (r.success) {
+        document.getElementById('form-id').value = r.data.id;
+        document.getElementById('form-codeAsset').value = r.data.codeAsset;
+        document.getElementById('form-codeAssetDisplay').value = r.data.codeAsset;
+        document.getElementById('form-company').value = r.data.company;
+        document.getElementById('form-costCenter').value = r.data.costCenter;
+        document.getElementById('form-department').value = r.data.department;
+        document.getElementById('form-location').value = r.data.location;
+        document.getElementById('form-assetName').value = r.data.assetName;
+        document.getElementById('form-serialNo').value = r.data.serialNo;
+        document.getElementById('form-warrantyExp').value = r.data.warrantyExp;
+        Swal.fire({ icon: 'success', title: 'ดึงข้อมูลทรัพย์สินสำเร็จ', timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
+      } else { 
+        Swal.fire('ไม่พบข้อมูล', r.message || 'กรุณาตรวจสอบรหัส ID อีกครั้ง', 'warning'); 
+        ['form-id', 'form-codeAsset', 'form-codeAssetDisplay', 'form-company', 'form-costCenter', 'form-department', 'form-location', 'form-assetName', 'form-serialNo', 'form-warrantyExp'].forEach(id => document.getElementById(id).value = '');
+      }
+    }).getAssetDataById(id);
+  }
+
+  function handleStatusChange() {
+    const status = document.querySelector('input[name="status"]:checked').value;
+    const f1 = document.getElementById('fix1-container');
+    const f2 = document.getElementById('fix2-container');
+    const i1 = document.getElementById('fix1Detail');
+    const i2 = document.getElementById('fix2Detail');
+    
+    if (status === 'แก้ไขได้' || status === 'ส่งซ่อมรายละเอียด') {
+      f1.classList.remove('hidden');
+      f2.classList.add('hidden');
+      i1.required = true;
+      i2.required = false;
+      i2.value = '';
+    } else if (status === 'ไม่ส่งซ่อมเนื่องจาก') {
+      f1.classList.add('hidden');
+      f2.classList.remove('hidden');
+      i1.required = false;
+      i2.required = true;
+      i1.value = '';
+    }
+  }
+
+  function handleRepairSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    
+    Swal.fire({ 
+      title: 'ยืนยันการส่งข้อมูล?', 
+      text: "ระบบจะบันทึกข้อมูลและสร้างไฟล์ PDF ทันที", 
+      icon: 'question', 
+      showCancelButton: true,
+      confirmButtonText: 'ตกลง, ส่งข้อมูล',
+      cancelButtonText: 'ยกเลิก'
+    }).then((res) => {
+      if (res.isConfirmed) {
+        btn.disabled = true; 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> กำลังบันทึกและสร้าง PDF...';
+        
+        const f = e.target;
+        const formData = {
+          jobNo: f.jobNo.value === (f.jobNo.value.split('-')[0] + "-XXXX") ? "" : f.jobNo.value,
+          id: f.id.value,
+          codeAsset: f.codeAsset.value,
+          company: f.company.value,
+          costCenter: f.costCenter.value,
+          department: f.department.value,
+          location: f.location.value,
+          assetName: f.assetName.value,
+          serialNo: f.serialNo.value,
+          warrantyExp: f.warrantyExp.value,
+          issueDetail: f.issueDetail.value,
+          requester: f.requester.value,
+          contactInfo: f.contactInfo.value,
+          acknowledgedBy: f.acknowledgedBy.value,
+          status: f.status.value,
+          fixDetail: f.fixDetail.value,
+          inspectedBy: f.inspectedBy.value,
+          fix1Detail: f.fix1Detail.value,
+          fix2Detail: f.fix2Detail.value
+        };
+
+        google.script.run.withSuccessHandler(function(r) {
+          if (r.success) { 
+            repairCache = null; // Clear cache
+            Swal.fire({
+              title: 'บันทึกสำเร็จ!',
+              html: `Job No: <b>${r.jobNo}</b><br><br><a href="${r.pdfUrl}" target="_blank" class="inline-block bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700 transition-all"><i class="fas fa-file-pdf mr-2"></i>เปิดดูไฟล์ PDF</a>`,
+              icon: 'success'
+            }).then(() => { 
+              f.reset(); 
+              initRepairForm(); 
+              toggleRepairTab('history'); 
+            }); 
+          } else { 
+            Swal.fire('ผิดพลาด', r.message, 'error'); 
+          }
+          btn.disabled = false; 
+          btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> ส่งข้อมูลแจ้งซ่อมและสร้าง PDF';
+        }).submitRepairRequestV3(formData);
+      }
+    });
+  }
+
+  function loadRepairHistory() {
+    const now = Date.now();
+    if (repairCache && (now - lastFetchTime < 60000)) {
+      renderRepairHistory(repairCache);
+      return;
+    }
+
+    const b = document.getElementById('repair-history-body');
+    b.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> กำลังโหลดข้อมูล...</td></tr>';
+    
+    google.script.run.withSuccessHandler(function(r) {
+      if (r.success && r.data) {
+        repairCache = r.data;
+        lastFetchTime = Date.now();
+        renderRepairHistory(r.data);
+      } else {
+        b.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-red-400">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+      }
+    }).getRepairHistoryV3();
+  }
+
+  function renderRepairHistory(data) {
+    const b = document.getElementById('repair-history-body');
+    if (data.length === 0) {
+      b.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-400">ยังไม่มีประวัติการแจ้งซ่อม</td></tr>';
+      return;
+    }
+    
+    const fragment = document.createDocumentFragment();
+    data.forEach(i => {
+      const tr = document.createElement('tr');
+      tr.className = "border-b hover:bg-gray-50 transition-all";
+      
+      let statusClass = "bg-gray-100 text-gray-600";
+      if (i.status === 'แก้ไขได้') statusClass = "bg-green-100 text-green-700";
+      if (i.status === 'ส่งซ่อมรายละเอียด') statusClass = "bg-blue-100 text-blue-700";
+      if (i.status === 'ไม่ส่งซ่อมเนื่องจาก') statusClass = "bg-red-100 text-red-700";
+
+      tr.innerHTML = `
+        <td class="px-6 py-4">
+          <div class="font-bold text-blue-700">${i.jobNo}</div>
+          <div class="text-xs text-gray-400">${i.date}</div>
+        </td>
+        <td class="px-6 py-4 font-medium text-gray-700">${i.assetId}</td>
+        <td class="px-6 py-4">
+          <div class="text-sm font-medium text-gray-800 line-clamp-1">${i.assetName}</div>
+          <div class="text-xs text-gray-500 line-clamp-1">${i.issueDetail}</div>
+        </td>
+        <td class="px-6 py-4">
+          <span class="px-2 py-1 rounded-full text-xs font-bold ${statusClass}">${i.status}</span>
+        </td>
+        <td class="px-6 py-4 text-center">
+          <a href="${i.pdfUrl}" target="_blank" class="text-red-500 hover:text-red-700 transition-all transform hover:scale-110 inline-block">
+            <i class="fas fa-file-pdf text-2xl"></i>
+          </a>
+        </td>
+      `;
+      fragment.appendChild(tr);
+    });
+    b.innerHTML = '';
+    b.appendChild(fragment);
+  }
+</script>
