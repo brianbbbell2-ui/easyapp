@@ -1,0 +1,439 @@
+<script type="text/template" id="delivery-template">
+  <div class="p-4 max-w-4xl mx-auto">
+    <div class="flex items-center space-x-3 mb-6">
+      <div class="bg-indigo-600 p-3 rounded-xl shadow-lg">
+        <i class="fas fa-truck text-white text-xl"></i>
+      </div>
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">ส่งเอกสาร / พัสดุ</h2>
+        <p class="text-sm text-gray-500">จัดการการส่งและติดตามสถานะ</p>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex space-x-1 bg-white p-1 rounded-xl shadow-sm mb-6 border">
+      <button onclick="switchDeliveryTab('add')" id="tab-add" class="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 bg-indigo-600 text-white shadow-sm">
+        <i class="fas fa-plus-circle mr-2"></i>เพิ่มข้อมูล
+      </button>
+      <button onclick="switchDeliveryTab('pending')" id="tab-pending" class="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-50">
+        <i class="fas fa-clock mr-2"></i>ที่ยังไม่ได้ส่ง
+      </button>
+      <button onclick="switchDeliveryTab('history')" id="tab-history" class="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-50">
+        <i class="fas fa-history mr-2"></i>ประวัติการบันทึก
+      </button>
+    </div>
+
+    <!-- Tab Contents -->
+    <div id="delivery-content-add" class="delivery-tab-content">
+      <div class="bg-white rounded-2xl shadow-sm border p-6">
+        <form id="delivery-form" onsubmit="handleDeliverySubmit(event)" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ประเภท</label>
+              <select name="type" required class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option value="เอกสาร">เอกสาร</option>
+                <option value="พัสดุ">พัสดุ</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">วันที่ / เวลา</label>
+              <input type="text" id="delivery-datetime" readonly class="w-full px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้ติดต่อ</label>
+              <input type="text" name="contactName" required placeholder="ชื่อผู้รับ/ผู้ติดต่อ" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ฝ่าย / แผนก</label>
+              <input type="text" name="department" required placeholder="ระบุฝ่ายหรือแผนก" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
+              <input type="tel" name="phone" required placeholder="เบอร์โทรติดต่อ" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่ปลายทาง</label>
+              <select name="address" required class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option value="สนามบินดอนเมือง">สนามบินดอนเมือง</option>
+                <option value="สนามบินสุวรรณภูมิ">สนามบินสุวรรณภูมิ</option>
+                <option value="สำนักงานใหญ่">สำนักงานใหญ่</option>
+                <option value="สนามบินเชียงใหม่">สนามบินเชียงใหม่</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">รายละเอียด</label>
+            <textarea name="details" rows="3" required placeholder="ระบุรายละเอียดสิ่งของ..." class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">รูปถ่าย (ถ้ามี)</label>
+            <div class="flex items-center space-x-4">
+              <button type="button" onclick="document.getElementById('delivery-photo').click()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition flex items-center">
+                <i class="fas fa-camera mr-2"></i>ถ่ายรูป / เลือกรูป
+              </button>
+              <span id="photo-status" class="text-xs text-gray-400">ยังไม่ได้เลือกรูป</span>
+              <input type="file" id="delivery-photo" accept="image/*" class="hidden" onchange="handleDeliveryPhoto(this)">
+            </div>
+            <div id="photo-preview" class="mt-2 hidden">
+              <img src="" class="h-32 rounded-lg border shadow-sm">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 pt-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ</label>
+              <div class="px-4 py-2 bg-yellow-50 text-yellow-700 rounded-xl border border-yellow-100 text-center font-bold">รอดำเนินการ</div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ผู้ส่ง</label>
+              <div id="delivery-sender-display" class="px-4 py-2 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 text-center font-bold">...</div>
+            </div>
+          </div>
+          <button type="submit" id="deliverySubmitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition duration-300 transform active:scale-95 mt-6">
+            <i class="fas fa-save mr-2"></i>บันทึกข้อมูล
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div id="delivery-content-pending" class="delivery-tab-content hidden">
+      <div id="pending-list" class="space-y-4">
+        <div class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-2"></i><p>กำลังโหลดข้อมูล...</p></div>
+      </div>
+    </div>
+
+    <div id="delivery-content-history" class="delivery-tab-content hidden">
+      <div id="history-list" class="space-y-4">
+        <div class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-2"></i><p>กำลังโหลดข้อมูล...</p></div>
+      </div>
+    </div>
+  </div>
+</script>
+
+<script>
+  let deliveryImageData = "";
+
+	  function initDeliveryForm() {
+	    updateDeliveryTime();
+	    document.getElementById('delivery-sender-display').innerText = currentUser.name;
+	    setInterval(updateDeliveryTime, 1000);
+	    // โหลดข้อมูลไว้รอเลย
+	    loadPendingDeliveries();
+	    loadDeliveryHistory();
+	  }
+
+  function updateDeliveryTime() {
+    const el = document.getElementById('delivery-datetime');
+    if (el) {
+      const now = new Date();
+      el.value = now.toLocaleString('th-TH', { 
+        year: 'numeric', month: '2-digit', day: '2-digit', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+      });
+    }
+  }
+
+  function switchDeliveryTab(tab) {
+    document.querySelectorAll('.delivery-tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById('delivery-content-' + tab).classList.remove('hidden');
+    
+    document.querySelectorAll('[id^="tab-"]').forEach(el => {
+      el.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+      el.classList.add('text-gray-600', 'hover:bg-gray-50');
+    });
+    
+    const activeBtn = document.getElementById('tab-' + tab);
+    activeBtn.classList.remove('text-gray-600', 'hover:bg-gray-50');
+    activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+    
+    if (tab === 'pending') loadPendingDeliveries();
+    if (tab === 'history') loadDeliveryHistory();
+  }
+
+  function handleDeliveryPhoto(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        deliveryImageData = e.target.result;
+        document.getElementById('photo-status').innerText = 'เลือกรูปแล้ว';
+        document.getElementById('photo-status').classList.add('text-green-600');
+        const preview = document.getElementById('photo-preview');
+        preview.classList.remove('hidden');
+        preview.querySelector('img').src = deliveryImageData;
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  function handleDeliverySubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const btn = document.getElementById('deliverySubmitBtn');
+    
+    const formData = {
+      type: form.type.value,
+      contactName: form.contactName.value,
+      department: form.department.value,
+      phone: form.phone.value,
+      address: form.address.value,
+      details: form.details.value,
+      imageData: deliveryImageData,
+      sender: currentUser.name
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> กำลังบันทึก...';
+
+    google.script.run.withSuccessHandler(function(response) {
+      if (response.success) {
+        Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: 'เลขที่รายการ: ' + response.jobNo });
+        form.reset();
+        deliveryImageData = "";
+        document.getElementById('photo-preview').classList.add('hidden');
+        document.getElementById('photo-status').innerText = 'ยังไม่ได้เลือกรูป';
+        document.getElementById('photo-status').classList.remove('text-green-600');
+        switchDeliveryTab('pending');
+      } else {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: response.message });
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save mr-2"></i>บันทึกข้อมูล';
+    }).submitDeliveryRequest(formData);
+  }
+
+  function loadPendingDeliveries() {
+    const listEl = document.getElementById('pending-list');
+    listEl.innerHTML = '<div class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-2"></i><p>กำลังโหลดข้อมูล...</p></div>';
+    
+    google.script.run
+      .withFailureHandler(function(err) {
+        listEl.innerHTML = '<div class="text-center py-10 text-red-400"><i class="fas fa-exclamation-circle text-3xl mb-2"></i><p>โหลดข้อมูลไม่สำเร็จ: ' + err.message + '</p></div>';
+      })
+      .withSuccessHandler(function(response) {
+      if (response.success) {
+        if (!response.data || response.data.length === 0) {
+          listEl.innerHTML = '<div class="bg-white p-10 rounded-2xl text-center border border-dashed border-gray-300 text-gray-400"><i class="fas fa-box-open text-4xl mb-2"></i><p>ไม่มีรายการค้างส่ง</p></div>';
+          return;
+        }
+        
+        let html = '';
+	        response.data.forEach(item => {
+	          html += `
+	            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center group">
+	              <div class="flex items-center space-x-4">
+	                <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+	                  <i class="fas ${item.type === 'เอกสาร' ? 'fa-file-alt' : 'fa-box'}"></i>
+	                </div>
+	                <div>
+	                  <div class="flex items-center space-x-2">
+	                    <span class="font-bold text-gray-800">${item.jobNo}</span>
+	                    <span class="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">${item.type}</span>
+	                  </div>
+	                  <p class="text-sm text-gray-600">ผู้รับ: ${item.contactName} (${item.address})</p>
+	                  <p class="text-xs text-gray-400 mt-1"><i class="far fa-clock mr-1"></i>${item.dateTime}</p>
+	                </div>
+	              </div>
+	              <div class="flex items-center space-x-2">
+	                <button onclick='showCompleteDelivery("${item.jobNo}")' class="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition">
+	                  <i class="fas fa-check-circle mr-1"></i>ส่งงาน
+	                </button>
+	                <span class="text-xs text-indigo-600 font-bold bg-indigo-50 px-3 py-1 rounded-full">รอดำเนินการ</span>
+	              </div>
+	            </div>
+	          `;
+	        });
+        listEl.innerHTML = html;
+      } else {
+        listEl.innerHTML = '<div class="text-center py-10 text-red-400"><i class="fas fa-exclamation-circle text-3xl mb-2"></i><p>ไม่สามารถโหลดรายการค้างส่งได้</p></div>';
+      }
+    }).getPendingDeliveries();
+  }
+
+  function loadDeliveryHistory() {
+    const listEl = document.getElementById('history-list');
+    listEl.innerHTML = '<div class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-2"></i><p>กำลังโหลดข้อมูล...</p></div>';
+    
+    google.script.run
+      .withFailureHandler(function(err) {
+        listEl.innerHTML = '<div class="text-center py-10 text-red-400"><i class="fas fa-exclamation-circle text-3xl mb-2"></i><p>โหลดข้อมูลไม่สำเร็จ: ' + err.message + '</p></div>';
+      })
+      .withSuccessHandler(function(response) {
+      if (response.success) {
+        if (!response.data || response.data.length === 0) {
+          listEl.innerHTML = '<div class="bg-white p-10 rounded-2xl text-center border border-dashed border-gray-300 text-gray-400"><i class="fas fa-history text-4xl mb-2"></i><p>ยังไม่มีประวัติการส่ง</p></div>';
+          return;
+        }
+        
+	        let html = '';
+	        response.data.forEach(item => {
+	          html += `
+	            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
+	              <div class="flex items-center space-x-4">
+	                <div class="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-600">
+	                  <i class="fas fa-check"></i>
+	                </div>
+	                <div>
+	                  <div class="flex items-center space-x-2">
+	                    <span class="font-bold text-gray-800 text-sm">${item.jobNo}</span>
+	                    <span class="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">${item.type}</span>
+	                  </div>
+	                  <p class="text-xs text-gray-500">ผู้รับ: ${item.contactName} | ปลายทาง: ${item.address}</p>
+	                  <p class="text-[10px] text-gray-400 mt-0.5">ส่งเมื่อ: ${item.deliveryTime}</p>
+	                </div>
+	              </div>
+	              <div class="flex items-center space-x-3">
+	                <button onclick='showDeliveryDetail(${JSON.stringify(item)})' class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="ดูรายละเอียด">
+	                  <i class="fas fa-info-circle text-xl"></i>
+	                </button>
+	                <span class="text-xs text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full">สำเร็จ</span>
+	              </div>
+	            </div>
+	          `;
+	        });
+        listEl.innerHTML = html;
+      } else {
+        listEl.innerHTML = '<div class="text-center py-10 text-red-400"><p>ไม่สามารถโหลดข้อมูลประวัติได้</p></div>';
+      }
+	    }).getDeliveryHistory();
+	  }
+
+	  function showCompleteDelivery(jobNo) {
+	    Swal.fire({
+	      title: 'เซ็นรับสิ่งของ',
+	      html: `
+	        <div class="text-center">
+	          <p class="text-sm text-gray-500 mb-2">กรุณาเซ็นชื่อในช่องด้านล่าง</p>
+	          <canvas id="signature-pad" class="border-2 border-gray-200 rounded-xl bg-gray-50 mx-auto" width="400" height="200"></canvas>
+	          <button type="button" onclick="clearSignature()" class="mt-2 text-xs text-red-500 hover:underline">ล้างลายเซ็น</button>
+	        </div>
+	      `,
+	      showCancelButton: true,
+	      confirmButtonText: 'บันทึกการส่ง',
+	      cancelButtonText: 'ยกเลิก',
+	      didOpen: () => {
+	        const canvas = document.getElementById('signature-pad');
+	        const ctx = canvas.getContext('2d');
+	        let drawing = false;
+	        
+	        canvas.addEventListener('mousedown', () => drawing = true);
+	        canvas.addEventListener('mouseup', () => drawing = false);
+	        canvas.addEventListener('mousemove', (e) => {
+	          if (!drawing) return;
+	          const rect = canvas.getBoundingClientRect();
+	          const x = e.clientX - rect.left;
+	          const y = e.clientY - rect.top;
+	          ctx.lineWidth = 2;
+	          ctx.lineCap = 'round';
+	          ctx.lineTo(x, y);
+	          ctx.stroke();
+	          ctx.beginPath();
+	          ctx.moveTo(x, y);
+	        });
+	        
+	        // Touch support
+	        canvas.addEventListener('touchstart', (e) => {
+	          drawing = true;
+	          e.preventDefault();
+	        });
+	        canvas.addEventListener('touchend', () => {
+	          drawing = false;
+	          ctx.beginPath();
+	        });
+	        canvas.addEventListener('touchmove', (e) => {
+	          if (!drawing) return;
+	          const rect = canvas.getBoundingClientRect();
+	          const touch = e.touches[0];
+	          const x = touch.clientX - rect.left;
+	          const y = touch.clientY - rect.top;
+	          ctx.lineWidth = 2;
+	          ctx.lineCap = 'round';
+	          ctx.lineTo(x, y);
+	          ctx.stroke();
+	          ctx.beginPath();
+	          ctx.moveTo(x, y);
+	          e.preventDefault();
+	        });
+	      },
+	      preConfirm: () => {
+	        const canvas = document.getElementById('signature-pad');
+	        return canvas.toDataURL();
+	      }
+	    }).then((result) => {
+	      if (result.isConfirmed) {
+	        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+	        google.script.run.withSuccessHandler(function(response) {
+	          if (response.success) {
+	            Swal.fire({ icon: 'success', title: 'ส่งงานเรียบร้อยแล้ว' });
+	            loadPendingDeliveries();
+	          } else {
+	            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: response.message });
+	          }
+	        }).completeDelivery(jobNo, result.value);
+	      }
+	    });
+	  }
+
+	  function clearSignature() {
+	    const canvas = document.getElementById('signature-pad');
+	    const ctx = canvas.getContext('2d');
+	    ctx.clearRect(0, 0, canvas.width, canvas.height);
+	    ctx.beginPath();
+	  }
+
+	  // แปลง Google Drive share URL เป็น direct image URL
+	  function getDriveDirectUrl(url) {
+	    if (!url || !url.startsWith('http')) return '';
+	    // รูปแบบ: https://drive.google.com/file/d/FILE_ID/view?...
+	    var m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+	    if (m) return 'https://drive.google.com/uc?export=view&id=' + m[1];
+	    // รูปแบบ: https://drive.google.com/open?id=FILE_ID
+	    var m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+	    if (m2) return 'https://drive.google.com/uc?export=view&id=' + m2[1];
+	    return url;
+	  }
+
+	  function showDeliveryDetail(item) {
+	    var imgUrl = getDriveDirectUrl(item.imageUrl);
+	    var sigUrl = getDriveDirectUrl(item.signatureUrl);
+	    let content = `
+	      <div class="text-left space-y-3">
+	        <div class="grid grid-cols-2 gap-2 text-sm">
+	          <div class="text-gray-500">ประเภท:</div><div class="font-bold">${item.type || '-'}</div>
+	          <div class="text-gray-500">ผู้รับ:</div><div class="font-bold">${item.contactName || '-'}</div>
+	          <div class="text-gray-500">ฝ่าย/แผนก:</div><div class="font-bold">${item.department || '-'}</div>
+	          <div class="text-gray-500">เบอร์โทร:</div><div class="font-bold">${item.phone || '-'}</div>
+	          <div class="text-gray-500">ปลายทาง:</div><div class="font-bold">${item.address || '-'}</div>
+	          <div class="text-gray-500">ผู้ส่ง:</div><div class="font-bold">${item.sender || '-'}</div>
+	          <div class="text-gray-500">วันที่บันทึก:</div><div class="font-bold">${item.dateTime || '-'}</div>
+	          <div class="text-gray-500">เวลาส่งสำเร็จ:</div><div class="font-bold">${item.deliveryTime || '-'}</div>
+	        </div>
+	        <div class="border-t pt-2 mt-2">
+	          <div class="text-xs text-gray-500 mb-1">รายละเอียดสิ่งของ:</div>
+	          <div class="bg-gray-50 p-3 rounded-lg text-sm">${item.details || '-'}</div>
+	        </div>
+	        ${imgUrl ? `
+	          <div class="border-t pt-2 mt-2">
+	            <div class="text-xs text-gray-500 mb-1">รูปถ่าย:</div>
+	            <img src="${imgUrl}" class="w-full rounded-lg border shadow-sm cursor-pointer" style="max-height: 300px; object-fit: contain;"
+	              onerror="this.outerHTML='<div class=\'text-xs text-red-400 italic mt-1\'>ไม่สามารถโหลดรูปถ่ายได้</div>'"
+	              onclick="window.open('${item.imageUrl}', '_blank')">
+	          </div>
+	        ` : '<div class="text-xs text-gray-400 italic mt-2">ไม่มีรูปถ่าย</div>'}
+	        ${sigUrl ? `
+	          <div class="border-t pt-2 mt-2">
+	            <div class="text-xs text-gray-500 mb-1">ลายเซ็นผู้รับ:</div>
+	            <img src="${sigUrl}" class="h-32 mx-auto border rounded bg-white p-2 shadow-inner" style="width: 100%; object-fit: contain;"
+	              onerror="this.outerHTML='<div class=\'text-xs text-red-400 italic mt-1\'>ไม่สามารถโหลดลายเซ็นได้</div>'">
+	          </div>
+	        ` : '<div class="text-xs text-gray-400 italic mt-2">ไม่มีลายเซ็นผู้รับ</div>'}
+	      </div>
+	    `;
+
+	    Swal.fire({
+	      title: 'รายละเอียดรายการ ' + item.jobNo,
+	      html: content,
+	      width: '500px',
+	      confirmButtonText: 'ปิดหน้าต่าง',
+	      confirmButtonColor: '#4f46e5'
+	    });
+	  }
+	</script>
